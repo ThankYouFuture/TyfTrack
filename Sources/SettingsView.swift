@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject var settings: AppSettings
@@ -14,7 +15,7 @@ struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Réglages")
+                Text(L("settings.title"))
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                 Spacer()
                 Button { dismiss() } label: { Image(systemName: "xmark").font(.system(size: 10)) }
@@ -24,8 +25,8 @@ struct SettingsView: View {
 
             // Bexio connection
             VStack(alignment: .leading, spacing: 6) {
-                Text("CONNEXION BEXIO").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
-                SecureField("Jeton API Bexio (developer.bexio.com)", text: $token)
+                Text(L("settings.bexio")).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
+                SecureField(L("settings.token.placeholder"), text: $token)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                 HStack(spacing: 8) {
@@ -33,7 +34,7 @@ struct SettingsView: View {
                         testConnection()
                     } label: {
                         if testing { ProgressView().controlSize(.small) }
-                        else { Text("Tester et enregistrer").font(.system(size: 11.5, weight: .semibold)) }
+                        else { Text(L("settings.test")).font(.system(size: 11.5, weight: .semibold)) }
                     }
                     .buttonStyle(GlassButtonStyle(prominent: true))
                     .disabled(testing || token.isEmpty)
@@ -44,12 +45,12 @@ struct SettingsView: View {
                             .foregroundStyle(testOK ? Brand.accent : .orange)
                             .lineLimit(2)
                     } else if settings.bexioUserId != 0 {
-                        Label("Connecté : \(settings.bexioUserName)", systemImage: "person.badge.shield.checkmark")
+                        Label(L("settings.connected", settings.bexioUserName), systemImage: "person.badge.shield.checkmark")
                             .font(.system(size: 10.5))
                             .foregroundStyle(.secondary)
                     }
                 }
-                Text("Crée un jeton personnel sur developer.bexio.com → API Tokens. Il est stocké dans le trousseau macOS.")
+                Text(L("settings.token.hint"))
                     .font(.system(size: 9.5))
                     .foregroundStyle(.tertiary)
             }
@@ -58,24 +59,24 @@ struct SettingsView: View {
 
             // Defaults
             VStack(alignment: .leading, spacing: 8) {
-                Text("VALEURS PAR DÉFAUT").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
+                Text(L("settings.defaults")).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
 
                 HStack {
-                    Text("Activité par défaut").font(.system(size: 12))
+                    Text(L("settings.defaultActivity")).font(.system(size: 12))
                     Spacer()
                     Picker("", selection: defaultServiceBinding) {
-                        Text("— Aucune —").tag(0)
+                        Text(L("settings.noneF")).tag(0)
                         ForEach(cache.services) { s in Text(s.name).tag(s.id) }
                     }
                     .labelsHidden()
                     .frame(maxWidth: 170)
                 }
 
-                Toggle("Facturable par défaut", isOn: $settings.defaultBillable)
+                Toggle(L("settings.defaultBillable"), isOn: $settings.defaultBillable)
                     .font(.system(size: 12)).toggleStyle(.switch).controlSize(.small)
 
                 HStack {
-                    Text("Statut Bexio à l'envoi").font(.system(size: 12))
+                    Text(L("settings.status")).font(.system(size: 12))
                     Spacer()
                     Picker("", selection: $settings.sendStatusId) {
                         ForEach(BexioAPI.timesheetStatuses, id: \.id) { s in
@@ -87,13 +88,13 @@ struct SettingsView: View {
                 }
 
                 HStack {
-                    Text("Arrondi à l'envoi").font(.system(size: 12))
+                    Text(L("settings.rounding")).font(.system(size: 12))
                     Spacer()
                     Picker("", selection: $settings.roundingMinutes) {
-                        Text("À la minute").tag(1)
-                        Text("5 min (sup.)").tag(5)
-                        Text("6 min (sup.)").tag(6)
-                        Text("15 min (sup.)").tag(15)
+                        Text(L("settings.rounding.minute")).tag(1)
+                        Text(L("settings.rounding.up", 5)).tag(5)
+                        Text(L("settings.rounding.up", 6)).tag(6)
+                        Text(L("settings.rounding.up", 15)).tag(15)
                     }
                     .labelsHidden()
                     .frame(maxWidth: 170)
@@ -104,39 +105,45 @@ struct SettingsView: View {
 
             // Presence
             VStack(alignment: .leading, spacing: 8) {
-                Text("PRÉSENCE").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
-                Text("La mise en veille met toujours les chronos en pause.")
+                Text(L("settings.presence")).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
+                Text(L("settings.sleepNote"))
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
-                Toggle("Pause quand l'écran se verrouille", isOn: $settings.pauseOnLock)
+                Toggle(L("settings.lock"), isOn: $settings.pauseOnLock)
                     .font(.system(size: 12)).toggleStyle(.switch).controlSize(.small)
                 HStack {
-                    Text("Pause auto après inactivité").font(.system(size: 12))
+                    Text(L("settings.idle")).font(.system(size: 12))
                     Spacer()
                     Picker("", selection: $settings.idleMinutes) {
-                        Text("Désactivée").tag(0)
-                        Text("5 min").tag(5)
-                        Text("10 min").tag(10)
-                        Text("15 min").tag(15)
-                        Text("30 min").tag(30)
+                        Text(L("settings.idle.off")).tag(0)
+                        Text(L("settings.min", 5)).tag(5)
+                        Text(L("settings.min", 10)).tag(10)
+                        Text(L("settings.min", 15)).tag(15)
+                        Text(L("settings.min", 30)).tag(30)
                     }
                     .labelsHidden()
                     .frame(maxWidth: 170)
                 }
-                Text("Le temps d'inactivité est automatiquement déduit du chrono.")
+                Text(L("settings.idleNote"))
                     .font(.system(size: 9.5)).foregroundStyle(.tertiary)
             }
 
             Divider()
 
-            Toggle("Lancer TyfTrack à l'ouverture de session", isOn: $launchAtLogin)
+            Toggle(L("settings.login"), isOn: $launchAtLogin)
                 .font(.system(size: 12)).toggleStyle(.switch).controlSize(.small)
                 .onChange(of: launchAtLogin) { _, newValue in
                     if settings.launchAtLogin != newValue { settings.launchAtLogin = newValue }
                 }
 
             HStack {
+                Button {
+                    NSWorkspace.shared.open(URL(string: "https://github.com/ThankYouFuture/TyfTrack/blob/main/HELP.md")!)
+                } label: {
+                    Label(L("settings.help"), systemImage: "questionmark.circle").font(.system(size: 11))
+                }
+                .buttonStyle(GlassButtonStyle())
                 if let sync = cache.lastSync {
-                    Text("Données Bexio synchronisées \(sync.formatted(date: .abbreviated, time: .shortened))")
+                    Text(L("settings.synced", sync.formatted(date: .abbreviated, time: .shortened)))
                         .font(.system(size: 9.5)).foregroundStyle(.tertiary)
                 }
                 Spacer()
@@ -144,7 +151,7 @@ struct SettingsView: View {
                     Task { await cache.refresh() }
                 } label: {
                     if cache.syncing { ProgressView().controlSize(.small) }
-                    else { Label("Synchroniser", systemImage: "arrow.triangle.2.circlepath").font(.system(size: 11)) }
+                    else { Label(L("settings.sync"), systemImage: "arrow.triangle.2.circlepath").font(.system(size: 11)) }
                 }
                 .buttonStyle(GlassButtonStyle())
             }

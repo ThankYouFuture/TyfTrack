@@ -1,60 +1,85 @@
-# TyfTrack ⏱
+<p align="center">
+  <img src="Resources/logo-tyf.png" width="110" alt="TYF logo">
+</p>
 
-Mini-app macOS **toujours au premier plan** pour chronométrer le travail par client / projet et envoyer les heures directement dans **Bexio** (`POST /2.0/timesheet`). Design *liquid glass* aux couleurs de [tyf.ch](https://tyf.ch).
+<h1 align="center">TyfTrack</h1>
 
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-SwiftUI-orange)
+<p align="center">
+  <b>Floating time tracker for macOS, wired straight into Bexio.</b><br>
+  Multiple parallel timers · liquid-glass UI · one click books the hours in your Swiss accounting.
+</p>
 
-## Fonctionnalités
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white" alt="SwiftUI">
+  <img src="https://img.shields.io/badge/Bexio-API%202.0%2F3.0-46a049" alt="Bexio API">
+  <img src="https://img.shields.io/badge/lang-EN%20·%20FR%20·%20DE-8a6de9" alt="EN FR DE">
+</p>
 
-- **Chronos multiples en parallèle** — un par client/projet, panneau flottant au-dessus de toutes les fenêtres.
-- **Pause / reprise** par chrono, ou tout mettre en pause d'un coup depuis la barre de menus.
-- **Envoi manuel uniquement** : rien ne part dans Bexio avant le clic sur ✈ (Terminer & envoyer).
-- **Mise en veille = pause automatique** (toujours). Options : pause au verrouillage de l'écran, pause après X min d'inactivité clavier/souris **avec déduction du temps d'absence**.
-- **Chrono express** ⚡ : démarre immédiatement, tu qualifies client/projet plus tard.
-- **Arrondi configurable** à l'envoi : minute, 5, 6 ou 15 min (arrondi supérieur).
-- **Barre de menus** : temps qui défile, liste des chronos, pause/reprise rapide.
-- **Persistance** : les chronos survivent à un redémarrage de l'app (restaurés en pause).
-- **Cache local** clients / projets / activités Bexio (recherche instantanée, projets filtrés par client).
-- Jeton API stocké dans le **trousseau macOS**.
+---
 
-## Installation / build
+**TyfTrack** is a native macOS menu-bar app for freelancers and small teams who bill their time through **[Bexio](https://www.bexio.com)**, the Swiss business software. A small always-on-top glass panel floats over your work: start a stopwatch per client and project, run several at once, pause, and when the job is done, one click books the timesheet into Bexio — nothing is ever sent before you decide to.
+
+## Why it exists
+
+Bexio's web timesheet is fine for typing hours after the fact — TyfTrack is for capturing them **while you work**, without a browser tab, with the honesty features a real workday needs:
+
+- ⏱ **Multiple simultaneous timers** — one per client/project, visible and ticking.
+- 🛰 **Direct Bexio integration** — timesheets (`POST /2.0/timesheet`) with client, project, business activity, note, billable flag and status (*Done* by default). Contacts, projects and activities are cached locally with instant search; projects auto-filter by client.
+- 😴 **Presence-aware** — going to sleep or locking the screen pauses the timers; after N idle minutes the idle time is **deducted automatically**. No inflated hours.
+- 🔁 **Continue a sent entry** — resume one of your last bookings the same day: the Bexio entry flips to *In progress* and the next send **updates it** instead of creating a duplicate.
+- ⚡ **Quick timer** — start now, assign the client later. Also scriptable via `tyftrack://` URLs (Shortcuts / Siri).
+- 🧊 **Liquid-glass design** — translucent panel in the spirit of macOS 26, TYF flavored.
+- 🔐 **Keychain-stored API token**, rounding rules (1/5/6/15 min), launch at login, English/French/German following your macOS language.
+
+Full manual: **[HELP.md](HELP.md)**.
+
+## Install
+
+### Download
+
+Grab `TyfTrack.zip` from the [latest release](https://github.com/ThankYouFuture/TyfTrack/releases), unzip, move `TyfTrack.app` to `/Applications`. The build is not notarized (no Apple Developer account), so on first launch either right-click → *Open*, or run:
 
 ```bash
-./Scripts/build.sh
-open build/TyfTrack.app
+xattr -d com.apple.quarantine /Applications/TyfTrack.app
 ```
 
-Compile avec les Command Line Tools seuls (pas besoin d'Xcode). `python3 Scripts/make_icon.py` régénère l'icône depuis `Resources/logo-tyf.png`.
+### Build from source
 
-## Configuration Bexio
+No Xcode needed — the Apple Command Line Tools are enough:
 
-1. Crée un jeton API personnel sur [developer.bexio.com](https://developer.bexio.com) (API Tokens).
-2. Ouvre TyfTrack → ⚙︎ Réglages → colle le jeton → **Tester et enregistrer**.
-3. L'app récupère ton `user_id` (`GET /3.0/users/me`) et synchronise contacts (`/2.0/contact`), projets (`/2.0/pr_project`) et activités (`/2.0/client_service`).
-4. À l'envoi : `POST /2.0/timesheet` avec `tracking: {type: "duration", date, duration}` — la date est celle du **début** du chrono.
+```bash
+git clone https://github.com/ThankYouFuture/TyfTrack.git
+cd TyfTrack
+./Scripts/build.sh install   # builds, copies to /Applications, launches
+```
 
-## Siri / Raccourcis
+### Connect Bexio
 
-L'app expose un schéma d'URL `tyftrack://` utilisable dans l'app **Raccourcis** (action « Ouvrir l'URL ») puis à la voix : *« Dis Siri, chrono TYF »*.
-
-| URL | Action |
-|---|---|
-| `tyftrack://start?note=…` | Démarre un chrono express |
-| `tyftrack://pause` | Met tout en pause |
-| `tyftrack://resume` | Reprend les chronos en pause |
-| `tyftrack://show` | Affiche le panneau |
-
-> Des App Intents Siri natifs (« Démarre un chrono pour Ayliffe ») nécessitent une compilation avec Xcode complet — prévu quand Xcode 26 sera installé, tout comme l'adoption de l'API native `.glassEffect`.
+Create a personal token on [developer.bexio.com](https://developer.bexio.com) → *API Tokens*, then in TyfTrack: **⚙︎ Settings → paste → Test & save**. Done — your clients, projects and activities sync locally.
 
 ## Architecture
 
 ```
 Sources/
-├── main.swift            Point d'entrée AppKit
-├── AppDelegate.swift     Panneau flottant, barre de menus, URL scheme
-├── Models.swift          TimerStore : chronos, veille/verrouillage/inactivité, persistance
-├── BexioAPI.swift        Client REST api.bexio.com + cache local
-├── Keychain.swift        Stockage du jeton
-├── Settings.swift        Préférences (UserDefaults)
-└── *View*.swift          SwiftUI, style liquid glass custom
+├── main.swift            AppKit entry point
+├── AppDelegate.swift     Floating NSPanel, menu bar, tyftrack:// URL scheme
+├── Models.swift          Timer engine: sleep/lock/idle watchers, persistence
+├── BexioAPI.swift        REST client for api.bexio.com + local cache
+├── L10n.swift            EN / FR / DE strings (follows the OS language)
+├── Keychain.swift        Token storage
+├── Settings.swift        Preferences
+└── *View*.swift          SwiftUI, custom liquid-glass styling
 ```
+
+Plain `swiftc` build, hand-rolled `.app` bundle, ad-hoc signature — see [Scripts/build.sh](Scripts/build.sh).
+
+## Keywords
+
+*Bexio time tracking, Bexio timesheet, macOS app, menu bar timer, Swiss accounting, Zeiterfassung, saisie des heures, SwiftUI, floating timer.*
+
+---
+
+<p align="center">
+  Built with ⏱ by <a href="https://tyf.ch"><b>TYF</b></a> — Thank You Future Sàrl, Switzerland
+</p>

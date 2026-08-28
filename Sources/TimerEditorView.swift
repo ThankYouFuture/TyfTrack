@@ -25,7 +25,7 @@ struct TimerEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(isCreate ? "Nouveau chrono" : "Modifier le chrono")
+                Text(isCreate ? L("editor.new") : L("editor.edit"))
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                 Spacer()
                 if cache.syncing {
@@ -37,12 +37,12 @@ struct TimerEditorView: View {
                         Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 11))
                     }
                     .buttonStyle(.plain)
-                    .help("Recharger clients, projets et activités depuis Bexio")
+                    .help(L("editor.reload.help"))
                 }
             }
 
             if cache.contacts.isEmpty && !cache.syncing {
-                Label("Aucune donnée Bexio en cache — clique sur ⟳ ou vérifie ton jeton dans les réglages.",
+                Label(L("editor.nocache"),
                       systemImage: "exclamationmark.triangle")
                     .font(.system(size: 11))
                     .foregroundStyle(.orange)
@@ -53,8 +53,8 @@ struct TimerEditorView: View {
 
             // Client
             VStack(alignment: .leading, spacing: 4) {
-                Text("CLIENT").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
-                TextField("Rechercher un client…", text: $contactQuery)
+                Text(L("editor.client")).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
+                TextField(L("editor.client.search"), text: $contactQuery)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                 if !filteredContacts.isEmpty && selectedContactNeedsList {
@@ -105,9 +105,9 @@ struct TimerEditorView: View {
 
             // Projet
             VStack(alignment: .leading, spacing: 4) {
-                Text("PROJET (optionnel)").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
+                Text(L("editor.project")).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
                 Picker("", selection: projectBinding) {
-                    Text("— Aucun —").tag(0)
+                    Text(L("editor.none")).tag(0)
                     ForEach(cache.projects(forContact: draft.contactId)) { p in
                         Text(p.name).tag(p.id)
                     }
@@ -117,9 +117,9 @@ struct TimerEditorView: View {
 
             // Activité
             VStack(alignment: .leading, spacing: 4) {
-                Text("ACTIVITÉ / PRESTATION").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
+                Text(L("editor.activity")).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
                 Picker("", selection: serviceBinding) {
-                    Text("— Choisir —").tag(0)
+                    Text(L("editor.choose")).tag(0)
                     ForEach(cache.services) { s in
                         Text(s.name).tag(s.id)
                     }
@@ -127,24 +127,24 @@ struct TimerEditorView: View {
                 .labelsHidden()
             }
 
-            TextField("Note (description de la prestation)", text: $draft.note)
+            TextField(L("editor.note"), text: $draft.note)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 12))
 
-            Toggle("Facturable", isOn: $draft.billable)
+            Toggle(L("editor.billable"), isOn: $draft.billable)
                 .font(.system(size: 12))
                 .toggleStyle(.switch)
                 .controlSize(.small)
 
             HStack {
-                Button("Annuler") { dismiss() }
+                Button(L("btn.cancel")) { dismiss() }
                     .buttonStyle(GlassButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button {
                     save()
                 } label: {
-                    Label(isCreate ? "Démarrer" : "Enregistrer",
+                    Label(isCreate ? L("btn.start") : L("btn.save"),
                           systemImage: isCreate ? "play.fill" : "checkmark")
                         .font(.system(size: 12.5, weight: .semibold))
                 }

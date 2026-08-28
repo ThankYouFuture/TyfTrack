@@ -10,10 +10,10 @@ enum PauseReason: String, Codable {
 
     var label: String {
         switch self {
-        case .user: return "En pause"
-        case .sleep: return "Pause auto — mise en veille"
-        case .idle: return "Pause auto — inactivité"
-        case .lock: return "Pause auto — écran verrouillé"
+        case .user: return L("pause.user")
+        case .sleep: return L("pause.sleep")
+        case .idle: return L("pause.idle")
+        case .lock: return L("pause.lock")
         }
     }
 }
@@ -47,7 +47,7 @@ struct WorkTimer: Identifiable, Codable, Equatable {
     var displayTitle: String {
         if !contactName.isEmpty { return contactName }
         if !projectName.isEmpty { return projectName }
-        return "Chrono express"
+        return L("timer.express")
     }
 }
 
@@ -201,11 +201,11 @@ final class TimerStore: ObservableObject {
         var t = timers[i]
 
         guard let serviceId = t.serviceId else {
-            lastError = "Choisis une activité (prestation) avant d'envoyer — ou définis une activité par défaut dans les réglages."
+            lastError = L("err.noservice")
             return
         }
         guard settings.bexioUserId != 0 else {
-            lastError = "Connexion Bexio non configurée : ouvre les réglages et teste ton jeton API."
+            lastError = L("err.noconfig")
             return
         }
 
@@ -225,7 +225,7 @@ final class TimerStore: ObservableObject {
                 )
                 timesheetId = linkedId
                 deltaSeconds = max(0, minutes * 60 - t.alreadySentSeconds)
-                lastInfo = "\(t.displayTitle) — saisie Bexio mise à jour : total \(minutes) min ✓"
+                lastInfo = L("info.updated", t.displayTitle, minutes)
             } else {
                 timesheetId = try await BexioAPI.shared.createTimesheet(
                     userId: settings.bexioUserId, serviceId: serviceId,
@@ -235,7 +235,7 @@ final class TimerStore: ObservableObject {
                     statusId: settings.sendStatusId
                 )
                 deltaSeconds = minutes * 60
-                lastInfo = "\(t.displayTitle) — \(minutes) min envoyées dans Bexio ✓"
+                lastInfo = L("info.sent", t.displayTitle, minutes)
             }
             t = timers.first(where: { $0.id == id }) ?? t
             sentEntries.append(SentEntry(date: Date(), seconds: deltaSeconds, label: t.displayTitle))
@@ -244,7 +244,7 @@ final class TimerStore: ObservableObject {
             lastError = nil
             persist()
         } catch {
-            lastError = "Envoi Bexio échoué : \(error.localizedDescription)"
+            lastError = L("err.send", error.localizedDescription)
         }
     }
 
@@ -379,7 +379,7 @@ final class TimerStore: ObservableObject {
                 timers[i].runningSince = nil
                 timers[i].pauseReason = .idle
             }
-            lastInfo = "Pause auto après \(Int(idle / 60)) min d'inactivité — ce temps a été déduit."
+            lastInfo = L("info.idle", Int(idle / 60))
             wasIdlePaused = true
             persist()
         } else if idle < 5 && wasIdlePaused {

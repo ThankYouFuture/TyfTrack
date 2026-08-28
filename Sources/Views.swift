@@ -166,16 +166,22 @@ struct ContentView: View {
     private var header: some View {
         HStack(spacing: 10) {
             if let img = Bundle.main.image(named: "logo-tyf") {
-                Image(nsImage: img)
-                    .resizable().scaledToFit()
-                    .frame(width: 30, height: 30)
-                    .colorMultiply(.white)
+                Button {
+                    NSWorkspace.shared.open(URL(string: "https://tyf.ch")!)
+                } label: {
+                    Image(nsImage: img)
+                        .resizable().scaledToFit()
+                        .frame(width: 30, height: 30)
+                        .colorMultiply(.white)
+                }
+                .buttonStyle(.plain)
+                .help(L("help.logo"))
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text("TyfTrack")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                 TimelineView(.periodic(from: .now, by: 1)) { _ in
-                    Text("Aujourd'hui : \(formatHM(store.totalToday))")
+                    Text(L("app.today", formatHM(store.totalToday)))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -185,7 +191,7 @@ struct ContentView: View {
                 Image(systemName: "gearshape.fill").font(.system(size: 13))
             }
             .buttonStyle(GlassButtonStyle())
-            .help("Réglages")
+            .help(L("help.settings"))
         }
         .padding(.horizontal, 16)
         .focusEffectDisabled()
@@ -226,7 +232,7 @@ struct ContentView: View {
     private func recentLabel(_ r: WorkTimer) -> String {
         var label = r.projectName.isEmpty ? r.displayTitle : "\(r.displayTitle) — \(r.projectName)"
         if r.linkedTimesheetId != nil && Calendar.current.isDateInToday(r.startedAt) {
-            label += " (continuer, \(r.alreadySentSeconds / 60) min)"
+            label += L("recent.continue", r.alreadySentSeconds / 60)
         }
         return label
     }
@@ -237,10 +243,10 @@ struct ContentView: View {
             Image(systemName: "timer")
                 .font(.system(size: 34, weight: .light))
                 .foregroundStyle(.secondary)
-            Text("Aucun chrono en cours")
+            Text(L("empty.title"))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
-            Text("Lance un chrono par client et projet,\nplusieurs en parallèle si tu veux.")
+            Text(L("empty.subtitle"))
                 .font(.system(size: 11))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.tertiary)
@@ -253,7 +259,7 @@ struct ContentView: View {
             Button {
                 showNewTimer = true
             } label: {
-                Label("Nouveau chrono", systemImage: "plus")
+                Label(L("btn.new"), systemImage: "plus")
                     .font(.system(size: 12.5, weight: .semibold))
             }
             .buttonStyle(GlassButtonStyle(prominent: true))
@@ -265,7 +271,7 @@ struct ContentView: View {
                     .font(.system(size: 12.5, weight: .semibold))
             }
             .buttonStyle(GlassButtonStyle())
-            .help("Chrono express : démarre tout de suite, tu choisis le client plus tard")
+            .help(L("help.express"))
 
             if !store.recents.isEmpty {
                 Menu {
@@ -290,7 +296,7 @@ struct ContentView: View {
                         Capsule().strokeBorder(Color.white.opacity(0.35), lineWidth: 0.8)
                     }
                 }
-                .help("Reprendre un des derniers chronos envoyés et le continuer")
+                .help(L("help.resumeMenu"))
             }
         }
         .padding(.horizontal, 14)
@@ -349,7 +355,7 @@ struct TimerCard: View {
                         .frame(width: 18)
                 }
                 .buttonStyle(GlassButtonStyle())
-                .help(timer.isRunning ? "Mettre en pause" : "Reprendre")
+                .help(timer.isRunning ? L("help.pause") : L("help.resumeTimer"))
 
                 Button {
                     sending = true
@@ -368,7 +374,7 @@ struct TimerCard: View {
                 }
                 .buttonStyle(GlassButtonStyle(prominent: true))
                 .disabled(sending)
-                .help("Terminer et envoyer dans Bexio (\(store.roundedMinutes(for: timer)) min)")
+                .help(L("help.send", store.roundedMinutes(for: timer)))
 
                 Button { confirmDelete = true } label: {
                     Image(systemName: "trash")
@@ -376,11 +382,11 @@ struct TimerCard: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help("Abandonner ce chrono (rien n'est envoyé)")
-                .confirmationDialog("Abandonner « \(timer.displayTitle) » (\(formatHMS(timer.elapsed))) sans envoyer ?",
+                .help(L("help.discard"))
+                .confirmationDialog(L("confirm.discard", timer.displayTitle, formatHMS(timer.elapsed)),
                                     isPresented: $confirmDelete) {
-                    Button("Abandonner", role: .destructive) { store.delete(timer.id) }
-                    Button("Annuler", role: .cancel) {}
+                    Button(L("btn.discard"), role: .destructive) { store.delete(timer.id) }
+                    Button(L("btn.cancel"), role: .cancel) {}
                 }
             }
 
@@ -391,13 +397,13 @@ struct TimerCard: View {
             }
 
             if timer.linkedTimesheetId != nil {
-                Label("Continue la saisie Bexio (\(timer.alreadySentSeconds / 60) min déjà envoyées, le total la remplacera)",
+                Label(L("card.linked", timer.alreadySentSeconds / 60),
                       systemImage: "link")
                     .font(.system(size: 9.5))
                     .foregroundStyle(.secondary)
             }
 
-            TextField("Note pour la prestation…", text: noteBinding)
+            TextField(L("card.note.placeholder"), text: noteBinding)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
                 .padding(.horizontal, 8)
@@ -413,7 +419,7 @@ struct TimerCard: View {
         var parts: [String] = []
         if !timer.projectName.isEmpty { parts.append(timer.projectName) }
         if !timer.serviceName.isEmpty { parts.append(timer.serviceName) }
-        parts.append(timer.billable ? "facturable" : "non facturable")
+        parts.append(timer.billable ? L("card.billable") : L("card.nonbillable"))
         return parts.joined(separator: " • ")
     }
 

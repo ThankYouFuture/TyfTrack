@@ -109,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func statusClicked() {
         let menu = NSMenu()
-        let showItem = NSMenuItem(title: panel.isVisible ? "Masquer TyfTrack" : "Afficher TyfTrack",
+        let showItem = NSMenuItem(title: panel.isVisible ? L("menu.hide") : L("menu.show"),
                                   action: #selector(menuTogglePanel), keyEquivalent: "")
         showItem.target = self
         menu.addItem(showItem)
@@ -125,7 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if !store.timers.isEmpty { menu.addItem(.separator()) }
 
-        let expressItem = NSMenuItem(title: "⚡ Chrono express", action: #selector(menuExpress), keyEquivalent: "n")
+        let expressItem = NSMenuItem(title: L("menu.express"), action: #selector(menuExpress), keyEquivalent: "n")
         expressItem.target = self
         menu.addItem(expressItem)
 
@@ -138,19 +138,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 item.target = self
                 recentMenu.addItem(item)
             }
-            let recentItem = NSMenuItem(title: "↻ Reprendre", action: nil, keyEquivalent: "")
+            let recentItem = NSMenuItem(title: L("menu.resume"), action: nil, keyEquivalent: "")
             recentItem.submenu = recentMenu
             menu.addItem(recentItem)
         }
 
         if store.runningCount > 0 {
-            let pauseItem = NSMenuItem(title: "Tout mettre en pause", action: #selector(menuPauseAll), keyEquivalent: "")
+            let pauseItem = NSMenuItem(title: L("menu.pauseAll"), action: #selector(menuPauseAll), keyEquivalent: "")
             pauseItem.target = self
             menu.addItem(pauseItem)
         }
 
         menu.addItem(.separator())
-        let quitItem = NSMenuItem(title: "Quitter TyfTrack", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: L("menu.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
 
         statusItem.menu = menu

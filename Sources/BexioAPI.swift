@@ -77,7 +77,7 @@ final class BexioAPI: @unchecked Sendable {
         }
         guard let token, !token.isEmpty else {
             TyfLog.append("\(method) \(path) — ABANDON: aucun jeton (trousseau vide ou inaccessible)")
-            throw BexioError(status: 0, message: "Aucun jeton API configuré")
+            throw BexioError(status: 0, message: L("err.notoken"))
         }
         var req = URLRequest(url: base.appendingPathComponent(path))
         req.httpMethod = method
@@ -135,9 +135,9 @@ final class BexioAPI: @unchecked Sendable {
 
     /// Fixed Bexio system statuses for timesheets (GET /2.0/timesheet_status,
     /// stable ids with translation keys — the web UI localizes them).
-    static let timesheetStatuses: [(id: Int, label: String)] = [
-        (1, "Ouvert"), (2, "En cours"), (3, "Terminé"),
-    ]
+    static var timesheetStatuses: [(id: Int, label: String)] {
+        [(1, L("status.open")), (2, L("status.inprogress")), (3, L("status.done"))]
+    }
 
     private func timesheetPayload(userId: Int, serviceId: Int, contactId: Int?, projectId: Int?,
                                   text: String, billable: Bool, date: Date, durationMinutes: Int,
