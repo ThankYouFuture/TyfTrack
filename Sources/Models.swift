@@ -280,6 +280,23 @@ final class TimerStore: ObservableObject {
         t.pauseReason = nil
         timers.insert(t, at: 0)
         persist()
+
+        // Flag the linked Bexio entry as "En cours" (2) while work continues;
+        // sending will set it back to the configured status.
+        if let linkedId = t.linkedTimesheetId, let serviceId = t.serviceId, settings.bexioUserId != 0 {
+            let snapshot = t
+            let userId = settings.bexioUserId
+            Task {
+                try? await BexioAPI.shared.editTimesheet(
+                    id: linkedId, userId: userId, serviceId: serviceId,
+                    contactId: snapshot.contactId, projectId: snapshot.projectId,
+                    text: snapshot.note, billable: snapshot.billable,
+                    date: snapshot.startedAt,
+                    durationMinutes: snapshot.alreadySentSeconds / 60,
+                    statusId: 2
+                )
+            }
+        }
     }
 
     // MARK: Persistence
