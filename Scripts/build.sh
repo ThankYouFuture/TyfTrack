@@ -27,3 +27,14 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 codesign --force --sign - "$APP"
 echo "✅ Build OK → $APP"
+
+# ./Scripts/build.sh install : remplace la version dans /Applications et relance
+if [[ "$1" == "install" ]]; then
+  osascript -e 'quit app "TyfTrack"' 2>/dev/null || true
+  sleep 1
+  pkill -x TyfTrack 2>/dev/null || true
+  rm -rf /Applications/TyfTrack.app
+  cp -R "$APP" /Applications/TyfTrack.app
+  open /Applications/TyfTrack.app
+  echo "✅ Installée et relancée depuis /Applications"
+fi
