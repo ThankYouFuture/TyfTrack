@@ -28,8 +28,11 @@ enum Keychain {
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
         var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess, let data = result as? Data else {
+            TyfLog.append("Keychain.loadToken — échec SecItemCopyMatching, status \(status)")
+            return nil
+        }
         return String(data: data, encoding: .utf8)
     }
 }

@@ -1,5 +1,30 @@
 import Foundation
 
+/// Append-only debug log: ~/Library/Application Support/TyfTrack/tyftrack.log
+enum TyfLog {
+    static let url: URL = {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("TyfTrack", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("tyftrack.log")
+    }()
+
+    static func append(_ message: String) {
+        let df = ISO8601DateFormatter()
+        let line = "\(df.string(from: Date())) \(message)\n"
+        NSLog("TyfTrack: %@", message)
+        if let data = line.data(using: .utf8) {
+            if let handle = try? FileHandle(forWritingTo: url) {
+                handle.seekToEndOfFile()
+                handle.write(data)
+                try? handle.close()
+            } else {
+                try? data.write(to: url)
+            }
+        }
+    }
+}
+
 struct BexioError: LocalizedError {
     let status: Int
     let message: String
@@ -47,7 +72,11 @@ final class BexioAPI: @unchecked Sendable {
     // MARK: Core request
 
     private func request(_ method: String, _ path: String, body: Data? = nil) async throws -> Data {
+        if token == nil || token?.isEmpty == true {
+            token = Keychain.loadToken()
+        }
         guard let token, !token.isEmpty else {
+            TyfLog.append("\(method) \(path) — ABANDON: aucun jeton (trousseau vide ou inaccessible)")
             throw BexioError(status: 0, message: "Aucun jeton API configuré")
         }
         var req = URLRequest(url: base.appendingPathComponent(path))
@@ -64,6 +93,7 @@ final class BexioAPI: @unchecked Sendable {
                 if let m = obj["message"] as? String { message = m }
                 if let errs = obj["errors"] as? [String] { message += " " + errs.joined(separator: ", ") }
             }
+            TyfLog.append("\(method) \(path) — HTTP \(status): \(String(message.prefix(200)))")
             throw BexioError(status: status, message: String(message.prefix(300)))
         }
         return data

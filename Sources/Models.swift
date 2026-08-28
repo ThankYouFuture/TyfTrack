@@ -287,14 +287,19 @@ final class TimerStore: ObservableObject {
             let snapshot = t
             let userId = settings.bexioUserId
             Task {
-                try? await BexioAPI.shared.editTimesheet(
-                    id: linkedId, userId: userId, serviceId: serviceId,
-                    contactId: snapshot.contactId, projectId: snapshot.projectId,
-                    text: snapshot.note, billable: snapshot.billable,
-                    date: snapshot.startedAt,
-                    durationMinutes: snapshot.alreadySentSeconds / 60,
-                    statusId: 2
-                )
+                do {
+                    try await BexioAPI.shared.editTimesheet(
+                        id: linkedId, userId: userId, serviceId: serviceId,
+                        contactId: snapshot.contactId, projectId: snapshot.projectId,
+                        text: snapshot.note, billable: snapshot.billable,
+                        date: snapshot.startedAt,
+                        durationMinutes: snapshot.alreadySentSeconds / 60,
+                        statusId: 2
+                    )
+                    TyfLog.append("reprise — saisie \(linkedId) passée « En cours »")
+                } catch {
+                    TyfLog.append("reprise — échec statut « En cours » sur \(linkedId): \(error.localizedDescription)")
+                }
             }
         }
     }
