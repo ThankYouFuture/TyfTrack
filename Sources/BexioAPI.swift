@@ -109,10 +109,9 @@ final class BexioAPI: @unchecked Sendable {
         (1, "Ouvert"), (2, "En cours"), (3, "Terminé"),
     ]
 
-    /// POST /2.0/timesheet — duration-based tracking. Returns the new timesheet id.
-    func createTimesheet(userId: Int, serviceId: Int, contactId: Int?, projectId: Int?,
-                         text: String, billable: Bool, date: Date, durationMinutes: Int,
-                         statusId: Int) async throws -> Int {
+    private func timesheetPayload(userId: Int, serviceId: Int, contactId: Int?, projectId: Int?,
+                                  text: String, billable: Bool, date: Date, durationMinutes: Int,
+                                  statusId: Int) throws -> Data {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         df.timeZone = .current
@@ -132,11 +131,29 @@ final class BexioAPI: @unchecked Sendable {
         ]
         if let contactId { payload["contact_id"] = contactId }
         if let projectId { payload["pr_project_id"] = projectId }
+        return try JSONSerialization.data(withJSONObject: payload)
+    }
 
-        let body = try JSONSerialization.data(withJSONObject: payload)
+    /// POST /2.0/timesheet — duration-based tracking. Returns the new timesheet id.
+    func createTimesheet(userId: Int, serviceId: Int, contactId: Int?, projectId: Int?,
+                         text: String, billable: Bool, date: Date, durationMinutes: Int,
+                         statusId: Int) async throws -> Int {
+        let body = try timesheetPayload(userId: userId, serviceId: serviceId, contactId: contactId,
+                                        projectId: projectId, text: text, billable: billable,
+                                        date: date, durationMinutes: durationMinutes, statusId: statusId)
         let data = try await request("POST", "2.0/timesheet", body: body)
         struct Created: Codable { let id: Int }
         return (try? JSONDecoder().decode(Created.self, from: data))?.id ?? 0
+    }
+
+    /// POST /2.0/timesheet/{id} — replaces the entry's duration with the new total.
+    func editTimesheet(id: Int, userId: Int, serviceId: Int, contactId: Int?, projectId: Int?,
+                       text: String, billable: Bool, date: Date, durationMinutes: Int,
+                       statusId: Int) async throws {
+        let body = try timesheetPayload(userId: userId, serviceId: serviceId, contactId: contactId,
+                                        projectId: projectId, text: text, billable: billable,
+                                        date: date, durationMinutes: durationMinutes, statusId: statusId)
+        _ = try await request("POST", "2.0/timesheet/\(id)", body: body)
     }
 }
 

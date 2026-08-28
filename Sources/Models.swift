@@ -32,8 +32,13 @@ struct WorkTimer: Identifiable, Codable, Equatable {
     var accumulated: TimeInterval = 0
     var runningSince: Date?
     var pauseReason: PauseReason?
+    /// Bexio timesheet already created for this work: sending updates it instead of creating a new one.
+    var linkedTimesheetId: Int?
+    /// Seconds already booked in the linked timesheet (included in `accumulated`).
+    var linkedSentSeconds: Int?
 
     var isRunning: Bool { runningSince != nil }
+    var alreadySentSeconds: Int { linkedSentSeconds ?? 0 }
 
     var elapsed: TimeInterval {
         accumulated + (runningSince.map { max(0, Date().timeIntervalSince($0)) } ?? 0)
@@ -175,7 +180,8 @@ final class TimerStore: ObservableObject {
     var totalToday: Int {
         let cal = Calendar.current
         let sent = sentEntries.filter { cal.isDateInToday($0.date) }.reduce(0) { $0 + $1.seconds }
-        let live = timers.reduce(0.0) { $0 + $1.elapsed }
+        // A continued timer's elapsed includes seconds already counted as sent.
+        let live = timers.reduce(0.0) { $0 + max(0, $1.elapsed - Double($1.alreadySentSeconds)) }
         return sent + Int(live)
     }
 
@@ -205,22 +211,36 @@ final class TimerStore: ObservableObject {
 
         let minutes = roundedMinutes(for: t)
         do {
-            _ = try await BexioAPI.shared.createTimesheet(
-                userId: settings.bexioUserId,
-                serviceId: serviceId,
-                contactId: t.contactId,
-                projectId: t.projectId,
-                text: t.note,
-                billable: t.billable,
-                date: t.startedAt,
-                durationMinutes: minutes,
-                statusId: settings.sendStatusId
-            )
+            let timesheetId: Int
+            let deltaSeconds: Int
+            if let linkedId = t.linkedTimesheetId {
+                // Continuation: update the existing entry with the new total.
+                try await BexioAPI.shared.editTimesheet(
+                    id: linkedId,
+                    userId: settings.bexioUserId, serviceId: serviceId,
+                    contactId: t.contactId, projectId: t.projectId,
+                    text: t.note, billable: t.billable,
+                    date: t.startedAt, durationMinutes: minutes,
+                    statusId: settings.sendStatusId
+                )
+                timesheetId = linkedId
+                deltaSeconds = max(0, minutes * 60 - t.alreadySentSeconds)
+                lastInfo = "\(t.displayTitle) — saisie Bexio mise à jour : total \(minutes) min ✓"
+            } else {
+                timesheetId = try await BexioAPI.shared.createTimesheet(
+                    userId: settings.bexioUserId, serviceId: serviceId,
+                    contactId: t.contactId, projectId: t.projectId,
+                    text: t.note, billable: t.billable,
+                    date: t.startedAt, durationMinutes: minutes,
+                    statusId: settings.sendStatusId
+                )
+                deltaSeconds = minutes * 60
+                lastInfo = "\(t.displayTitle) — \(minutes) min envoyées dans Bexio ✓"
+            }
             t = timers.first(where: { $0.id == id }) ?? t
-            sentEntries.append(SentEntry(date: Date(), seconds: minutes * 60, label: t.displayTitle))
-            rememberRecent(t)
+            sentEntries.append(SentEntry(date: Date(), seconds: deltaSeconds, label: t.displayTitle))
+            rememberRecent(t, timesheetId: timesheetId, totalMinutes: minutes)
             timers.removeAll { $0.id == id }
-            lastInfo = "\(t.displayTitle) — \(minutes) min envoyées dans Bexio ✓"
             lastError = nil
             persist()
         } catch {
@@ -228,12 +248,14 @@ final class TimerStore: ObservableObject {
         }
     }
 
-    private func rememberRecent(_ sent: WorkTimer) {
+    private func rememberRecent(_ sent: WorkTimer, timesheetId: Int, totalMinutes: Int) {
         var r = sent
         r.id = UUID()
         r.accumulated = 0
         r.runningSince = nil
         r.pauseReason = nil
+        r.linkedTimesheetId = timesheetId > 0 ? timesheetId : nil
+        r.linkedSentSeconds = timesheetId > 0 ? totalMinutes * 60 : nil
         recents.removeAll {
             $0.contactId == r.contactId && $0.projectId == r.projectId && $0.serviceId == r.serviceId
         }
@@ -241,12 +263,19 @@ final class TimerStore: ObservableObject {
         recents = Array(recents.prefix(5))
     }
 
-    /// Start a fresh timer from a recent configuration.
+    /// Resume a recently sent timer. Same day: the clock continues from the sent
+    /// time and sending updates the existing Bexio entry. Another day: fresh start.
     func restart(_ recent: WorkTimer) {
         var t = recent
         t.id = UUID()
-        t.startedAt = Date()
-        t.accumulated = 0
+        if t.linkedTimesheetId != nil && Calendar.current.isDateInToday(t.startedAt) {
+            t.accumulated = Double(t.alreadySentSeconds)
+        } else {
+            t.linkedTimesheetId = nil
+            t.linkedSentSeconds = nil
+            t.accumulated = 0
+            t.startedAt = Date()
+        }
         t.runningSince = Date()
         t.pauseReason = nil
         timers.insert(t, at: 0)

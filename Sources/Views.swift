@@ -188,6 +188,7 @@ struct ContentView: View {
             .help("Réglages")
         }
         .padding(.horizontal, 16)
+        .focusEffectDisabled()
     }
 
     @ViewBuilder
@@ -220,6 +221,14 @@ struct ContentView: View {
                 store.lastInfo = nil
             }
         }
+    }
+
+    private func recentLabel(_ r: WorkTimer) -> String {
+        var label = r.projectName.isEmpty ? r.displayTitle : "\(r.displayTitle) — \(r.projectName)"
+        if r.linkedTimesheetId != nil && Calendar.current.isDateInToday(r.startedAt) {
+            label += " (continuer, \(r.alreadySentSeconds / 60) min)"
+        }
+        return label
     }
 
     private var emptyState: some View {
@@ -264,16 +273,16 @@ struct ContentView: View {
                         Button {
                             store.restart(r)
                         } label: {
-                            Text(r.projectName.isEmpty ? r.displayTitle : "\(r.displayTitle) — \(r.projectName)")
+                            Text(recentLabel(r))
                         }
                     }
                 } label: {
-                    Label("Reprendre", systemImage: "arrow.counterclockwise")
+                    Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 12.5, weight: .semibold))
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 7)
                 .background {
                     ZStack {
@@ -281,10 +290,11 @@ struct ContentView: View {
                         Capsule().strokeBorder(Color.white.opacity(0.35), lineWidth: 0.8)
                     }
                 }
-                .help("Relancer un des derniers chronos envoyés")
+                .help("Reprendre un des derniers chronos envoyés et le continuer")
             }
         }
         .padding(.horizontal, 14)
+        .focusEffectDisabled()
     }
 }
 
@@ -380,6 +390,13 @@ struct TimerCard: View {
                     .foregroundStyle(.orange)
             }
 
+            if timer.linkedTimesheetId != nil {
+                Label("Continue la saisie Bexio (\(timer.alreadySentSeconds / 60) min déjà envoyées, le total la remplacera)",
+                      systemImage: "link")
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.secondary)
+            }
+
             TextField("Note pour la prestation…", text: noteBinding)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
@@ -389,6 +406,7 @@ struct TimerCard: View {
         }
         .padding(12)
         .glassCard(tint: timer.isRunning ? Brand.accent : .white)
+        .focusEffectDisabled()
     }
 
     private var subtitle: String {
