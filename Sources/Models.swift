@@ -71,6 +71,8 @@ func formatHM(_ seconds: Int) -> String {
 final class TimerStore: ObservableObject {
     @Published var timers: [WorkTimer] = []
     @Published var sentEntries: [SentEntry] = []
+    /// Recently sent timer configurations, newest first — for one-click restart.
+    @Published var recents: [WorkTimer] = []
     @Published var lastError: String?
     @Published var lastInfo: String?
 
@@ -89,6 +91,7 @@ final class TimerStore: ObservableObject {
     private struct PersistedState: Codable {
         var timers: [WorkTimer]
         var sentEntries: [SentEntry]
+        var recents: [WorkTimer]?
         var savedAt: Date
     }
 
@@ -210,10 +213,12 @@ final class TimerStore: ObservableObject {
                 text: t.note,
                 billable: t.billable,
                 date: t.startedAt,
-                durationMinutes: minutes
+                durationMinutes: minutes,
+                statusId: settings.sendStatusId
             )
             t = timers.first(where: { $0.id == id }) ?? t
             sentEntries.append(SentEntry(date: Date(), seconds: minutes * 60, label: t.displayTitle))
+            rememberRecent(t)
             timers.removeAll { $0.id == id }
             lastInfo = "\(t.displayTitle) — \(minutes) min envoyées dans Bexio ✓"
             lastError = nil
@@ -221,6 +226,31 @@ final class TimerStore: ObservableObject {
         } catch {
             lastError = "Envoi Bexio échoué : \(error.localizedDescription)"
         }
+    }
+
+    private func rememberRecent(_ sent: WorkTimer) {
+        var r = sent
+        r.id = UUID()
+        r.accumulated = 0
+        r.runningSince = nil
+        r.pauseReason = nil
+        recents.removeAll {
+            $0.contactId == r.contactId && $0.projectId == r.projectId && $0.serviceId == r.serviceId
+        }
+        recents.insert(r, at: 0)
+        recents = Array(recents.prefix(5))
+    }
+
+    /// Start a fresh timer from a recent configuration.
+    func restart(_ recent: WorkTimer) {
+        var t = recent
+        t.id = UUID()
+        t.startedAt = Date()
+        t.accumulated = 0
+        t.runningSince = Date()
+        t.pauseReason = nil
+        timers.insert(t, at: 0)
+        persist()
     }
 
     // MARK: Persistence
@@ -235,7 +265,7 @@ final class TimerStore: ObservableObject {
     }
 
     func saveNow() {
-        let state = PersistedState(timers: timers, sentEntries: sentEntries, savedAt: Date())
+        let state = PersistedState(timers: timers, sentEntries: sentEntries, recents: recents, savedAt: Date())
         if let data = try? JSONEncoder().encode(state) {
             try? data.write(to: stateURL, options: .atomic)
         }
@@ -256,6 +286,7 @@ final class TimerStore: ObservableObject {
             restored[i].pauseReason = .user
         }
         timers = restored
+        recents = state.recents ?? []
         let cal = Calendar.current
         sentEntries = state.sentEntries.filter { cal.isDateInToday($0.date) }
     }

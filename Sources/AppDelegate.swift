@@ -129,6 +129,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         expressItem.target = self
         menu.addItem(expressItem)
 
+        if !store.recents.isEmpty {
+            let recentMenu = NSMenu()
+            for r in store.recents.prefix(3) {
+                let title = r.projectName.isEmpty ? r.displayTitle : "\(r.displayTitle) — \(r.projectName)"
+                let item = NSMenuItem(title: title, action: #selector(menuRestartRecent(_:)), keyEquivalent: "")
+                item.representedObject = r.id.uuidString
+                item.target = self
+                recentMenu.addItem(item)
+            }
+            let recentItem = NSMenuItem(title: "↻ Reprendre", action: nil, keyEquivalent: "")
+            recentItem.submenu = recentMenu
+            menu.addItem(recentItem)
+        }
+
         if store.runningCount > 0 {
             let pauseItem = NSMenuItem(title: "Tout mettre en pause", action: #selector(menuPauseAll), keyEquivalent: "")
             pauseItem.target = self
@@ -147,6 +161,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func menuTogglePanel() { togglePanel() }
     @objc private func menuExpress() { store.addExpressTimer(); showPanel() }
     @objc private func menuPauseAll() { store.pauseAll(reason: .user) }
+    @objc private func menuRestartRecent(_ sender: NSMenuItem) {
+        guard let s = sender.representedObject as? String, let id = UUID(uuidString: s),
+              let r = store.recents.first(where: { $0.id == id }) else { return }
+        store.restart(r)
+        showPanel()
+    }
+
     @objc private func menuToggleTimer(_ sender: NSMenuItem) {
         guard let s = sender.representedObject as? String, let id = UUID(uuidString: s) else { return }
         store.toggle(id)

@@ -75,6 +75,18 @@ struct SettingsView: View {
                     .font(.system(size: 12)).toggleStyle(.switch).controlSize(.small)
 
                 HStack {
+                    Text("Statut Bexio à l'envoi").font(.system(size: 12))
+                    Spacer()
+                    Picker("", selection: $settings.sendStatusId) {
+                        ForEach(BexioAPI.timesheetStatuses, id: \.id) { s in
+                            Text(s.label).tag(s.id)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 170)
+                }
+
+                HStack {
                     Text("Arrondi à l'envoi").font(.system(size: 12))
                     Spacer()
                     Picker("", selection: $settings.roundingMinutes) {

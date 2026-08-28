@@ -103,9 +103,16 @@ final class BexioAPI: @unchecked Sendable {
         try await fetchAllPages("2.0/client_service", as: Service.self)
     }
 
+    /// Fixed Bexio system statuses for timesheets (GET /2.0/timesheet_status,
+    /// stable ids with translation keys — the web UI localizes them).
+    static let timesheetStatuses: [(id: Int, label: String)] = [
+        (1, "Ouvert"), (2, "En cours"), (3, "Terminé"),
+    ]
+
     /// POST /2.0/timesheet — duration-based tracking. Returns the new timesheet id.
     func createTimesheet(userId: Int, serviceId: Int, contactId: Int?, projectId: Int?,
-                         text: String, billable: Bool, date: Date, durationMinutes: Int) async throws -> Int {
+                         text: String, billable: Bool, date: Date, durationMinutes: Int,
+                         statusId: Int) async throws -> Int {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         df.timeZone = .current
@@ -115,6 +122,7 @@ final class BexioAPI: @unchecked Sendable {
             "user_id": userId,
             "client_service_id": serviceId,
             "allowable_bill": billable,
+            "status_id": statusId,
             "text": text,
             "tracking": [
                 "type": "duration",

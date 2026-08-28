@@ -252,11 +252,37 @@ struct ContentView: View {
             Button {
                 store.addExpressTimer()
             } label: {
-                Label("Express", systemImage: "bolt.fill")
+                Image(systemName: "bolt.fill")
                     .font(.system(size: 12.5, weight: .semibold))
             }
             .buttonStyle(GlassButtonStyle())
-            .help("Démarre tout de suite, tu choisis le client plus tard")
+            .help("Chrono express : démarre tout de suite, tu choisis le client plus tard")
+
+            if !store.recents.isEmpty {
+                Menu {
+                    ForEach(store.recents.prefix(3)) { r in
+                        Button {
+                            store.restart(r)
+                        } label: {
+                            Text(r.projectName.isEmpty ? r.displayTitle : "\(r.displayTitle) — \(r.projectName)")
+                        }
+                    }
+                } label: {
+                    Label("Reprendre", systemImage: "arrow.counterclockwise")
+                        .font(.system(size: 12.5, weight: .semibold))
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background {
+                    ZStack {
+                        Capsule().fill(.ultraThinMaterial)
+                        Capsule().strokeBorder(Color.white.opacity(0.35), lineWidth: 0.8)
+                    }
+                }
+                .help("Relancer un des derniers chronos envoyés")
+            }
         }
         .padding(.horizontal, 14)
     }

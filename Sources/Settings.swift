@@ -14,6 +14,8 @@ final class AppSettings: ObservableObject {
     @Published var defaultBillable: Bool { didSet { d.set(defaultBillable, forKey: "defaultBillable") } }
     /// Rounding step in minutes applied when sending (always rounds up). 1 = to the minute.
     @Published var roundingMinutes: Int { didSet { d.set(roundingMinutes, forKey: "roundingMinutes") } }
+    /// Bexio timesheet status applied on send (3 = Terminé).
+    @Published var sendStatusId: Int { didSet { d.set(sendStatusId, forKey: "sendStatusId") } }
     /// Auto-pause after this many minutes without keyboard/mouse input. 0 = disabled.
     @Published var idleMinutes: Int { didSet { d.set(idleMinutes, forKey: "idleMinutes") } }
     @Published var pauseOnLock: Bool { didSet { d.set(pauseOnLock, forKey: "pauseOnLock") } }
@@ -22,6 +24,7 @@ final class AppSettings: ObservableObject {
         d.register(defaults: [
             "defaultBillable": true,
             "roundingMinutes": 1,
+            "sendStatusId": 3,
             "idleMinutes": 10,
             "pauseOnLock": true,
         ])
@@ -31,6 +34,7 @@ final class AppSettings: ObservableObject {
         defaultServiceName = d.string(forKey: "defaultServiceName") ?? ""
         defaultBillable = d.bool(forKey: "defaultBillable")
         roundingMinutes = d.integer(forKey: "roundingMinutes")
+        sendStatusId = d.integer(forKey: "sendStatusId")
         idleMinutes = d.integer(forKey: "idleMinutes")
         pauseOnLock = d.bool(forKey: "pauseOnLock")
     }
