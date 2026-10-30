@@ -5,12 +5,15 @@ TyfTrack is a tiny always-on-top macOS timer that books your work hours straight
 ## 1. Setup
 
 1. Build or download the app (see the [README](README.md)), move `TyfTrack.app` to `/Applications` and launch it.
-2. Create a **personal API token** for your Bexio account on [developer.bexio.com](https://developer.bexio.com) → *API Tokens*.
-3. In TyfTrack, open **⚙︎ Settings**, paste the token and click **Test & save**. The token is stored securely in the macOS **Keychain** — it never touches the disk in clear text.
+2. **Connect with OpenID Connect** (recommended — Bexio personal tokens now expire after 60 days, an OpenID session renews itself forever):
+   1. On [developer.bexio.com](https://developer.bexio.com), create an **app** with the redirect URL `tyftrack://oauth-callback` and copy its **Client ID** and **Client Secret**.
+   2. In TyfTrack → **⚙︎ Settings**, paste both and click **Sign in with Bexio**. A Bexio login window opens; sign in and grant the requested scopes (timesheets write, contacts & projects read).
+   3. Done — the access token refreshes automatically; everything is stored in the macOS **Keychain**.
+3. *Legacy alternative*: a **personal access token** (developer.bexio.com → API Tokens, max 60 days) can still be pasted under *Personal access token (legacy)*.
 4. TyfTrack fetches your Bexio user and caches your **contacts, projects and business activities** locally, so pickers and search are instant. Use **Sync** whenever you add data in Bexio.
 5. Recommended: set a **default activity** and enable **Launch at login**.
 
-> **First keychain prompt** — macOS may ask whether TyfTrack is allowed to read the token: click **Always Allow**.
+> **First keychain prompt** — macOS may ask whether TyfTrack is allowed to read its stored secrets: click **Always Allow**.
 
 ## 2. Daily use
 

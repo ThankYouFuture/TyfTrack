@@ -30,7 +30,7 @@ Bexio's web timesheet is fine for typing hours after the fact — TyfTrack is fo
 - 🔁 **Continue a sent entry** — resume one of your last bookings the same day: the Bexio entry flips to *In progress* and the next send **updates it** instead of creating a duplicate.
 - ⚡ **Quick timer** — start now, assign the client later. Also scriptable via `tyftrack://` URLs (Shortcuts / Siri).
 - 🧊 **Liquid-glass design** — translucent panel in the spirit of macOS 26, TYF flavored.
-- 🔐 **Keychain-stored API token**, rounding rules (1/5/6/15 min), launch at login, English/French/German following your macOS language.
+- 🔐 **OpenID Connect sign-in** (self-renewing session, secrets in the Keychain), rounding rules (1/5/6/15 min), launch at login, English/French/German following your macOS language.
 
 Full manual: **[HELP.md](HELP.md)**.
 
@@ -56,7 +56,9 @@ cd TyfTrack
 
 ### Connect Bexio
 
-Create a personal token on [developer.bexio.com](https://developer.bexio.com) → *API Tokens*, then in TyfTrack: **⚙︎ Settings → paste → Test & save**. Done — your clients, projects and activities sync locally.
+**OpenID Connect** (recommended): create an app on [developer.bexio.com](https://developer.bexio.com) with the redirect URL `tyftrack://oauth-callback`, paste its Client ID and Client Secret in **⚙︎ Settings**, then **Sign in with Bexio**. The session renews itself — no expiry. TyfTrack requests only the scopes it needs (timesheets write, contacts and projects read).
+
+Alternatively, a legacy *personal access token* (max 60 days since Bexio's token policy change) still works.
 
 ## Architecture
 

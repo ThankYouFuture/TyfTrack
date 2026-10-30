@@ -72,17 +72,25 @@ final class BexioAPI: @unchecked Sendable {
     // MARK: Core request
 
     private func request(_ method: String, _ path: String, body: Data? = nil) async throws -> Data {
-        if token == nil || token?.isEmpty == true {
-            token = Keychain.loadToken()
-        }
-        guard let token, !token.isEmpty else {
-            TyfLog.append("\(method) \(path) — ABANDON: aucun jeton (trousseau vide ou inaccessible)")
-            throw BexioError(status: 0, message: L("err.notoken"))
+        let bearer: String
+        if await OAuthManager.shared.isConnected {
+            // OpenID Connect: short-lived access token, refreshed automatically.
+            bearer = try await OAuthManager.shared.validAccessToken()
+        } else {
+            // Legacy personal access token (60-day PAT).
+            if token == nil || token?.isEmpty == true {
+                token = Keychain.loadToken()
+            }
+            guard let token, !token.isEmpty else {
+                TyfLog.append("\(method) \(path) — ABANDON: aucun jeton (trousseau vide ou inaccessible)")
+                throw BexioError(status: 0, message: L("err.notoken"))
+            }
+            bearer = token
         }
         var req = URLRequest(url: base.appendingPathComponent(path))
         req.httpMethod = method
         req.httpBody = body
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         if body != nil { req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         let (data, resp) = try await URLSession.shared.data(for: req)

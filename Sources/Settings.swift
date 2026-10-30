@@ -7,6 +7,7 @@ final class AppSettings: ObservableObject {
     static let shared = AppSettings()
     private let d = UserDefaults.standard
 
+    @Published var oidcClientId: String { didSet { d.set(oidcClientId, forKey: "oidcClientId") } }
     @Published var bexioUserId: Int { didSet { d.set(bexioUserId, forKey: "bexioUserId") } }
     @Published var bexioUserName: String { didSet { d.set(bexioUserName, forKey: "bexioUserName") } }
     @Published var defaultServiceId: Int { didSet { d.set(defaultServiceId, forKey: "defaultServiceId") } }
@@ -28,6 +29,7 @@ final class AppSettings: ObservableObject {
             "idleMinutes": 10,
             "pauseOnLock": true,
         ])
+        oidcClientId = d.string(forKey: "oidcClientId") ?? ""
         bexioUserId = d.integer(forKey: "bexioUserId")
         bexioUserName = d.string(forKey: "bexioUserName") ?? ""
         defaultServiceId = d.integer(forKey: "defaultServiceId")

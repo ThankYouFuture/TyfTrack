@@ -8,6 +8,9 @@ struct SettingsView: View {
     @Environment(\.closeWindow) private var closeWindow
 
     @State private var token: String = Keychain.loadToken() ?? ""
+    @State private var clientSecret: String = Keychain.load(account: "bexio-client-secret") ?? ""
+    @State private var oidcConnected = false
+    @State private var connecting = false
     @State private var testing = false
     @State private var testResult: String?
     @State private var testOK = false
@@ -24,26 +27,46 @@ struct SettingsView: View {
                     .keyboardShortcut(.cancelAction)
             }
 
-            // Bexio connection
+            // Bexio connection — OpenID Connect (primary)
             VStack(alignment: .leading, spacing: 6) {
                 Text(L("settings.bexio")).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.secondary)
-                SecureField(L("settings.token.placeholder"), text: $token)
+                TextField(L("settings.clientId"), text: $settings.oidcClientId)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 12))
+                SecureField(L("settings.clientSecret"), text: $clientSecret)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                 HStack(spacing: 8) {
                     Button {
-                        testConnection()
+                        connectOIDC()
                     } label: {
-                        if testing { ProgressView().controlSize(.small) }
-                        else { Text(L("settings.test")).font(.system(size: 11.5, weight: .semibold)) }
+                        if connecting { ProgressView().controlSize(.small) }
+                        else { Text(L("settings.connect")).font(.system(size: 11.5, weight: .semibold)) }
                     }
                     .buttonStyle(GlassButtonStyle(prominent: true))
-                    .disabled(testing || token.isEmpty)
+                    .disabled(connecting || settings.oidcClientId.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                    if oidcConnected {
+                        Button(L("settings.disconnect")) {
+                            Task {
+                                await OAuthManager.shared.disconnect()
+                                oidcConnected = false
+                                testResult = nil
+                            }
+                        }
+                        .buttonStyle(GlassButtonStyle())
+                        .font(.system(size: 11))
+                    }
 
                     if let result = testResult {
                         Label(result, systemImage: testOK ? "checkmark.circle.fill" : "xmark.octagon.fill")
                             .font(.system(size: 10.5))
                             .foregroundStyle(testOK ? Brand.accent : .orange)
+                            .lineLimit(3)
+                    } else if oidcConnected {
+                        Label(L("settings.oidc.connected"), systemImage: "person.badge.shield.checkmark")
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(Brand.accent)
                             .lineLimit(2)
                     } else if settings.bexioUserId != 0 {
                         Label(L("settings.connected", settings.bexioUserName), systemImage: "person.badge.shield.checkmark")
@@ -51,9 +74,32 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                Text(L("settings.token.hint"))
+                Text(L("settings.oidc.hint"))
                     .font(.system(size: 9.5))
                     .foregroundStyle(.tertiary)
+                    .textSelection(.enabled)
+
+                DisclosureGroup {
+                    SecureField(L("settings.token.placeholder"), text: $token)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12))
+                    HStack(spacing: 8) {
+                        Button {
+                            testConnection()
+                        } label: {
+                            if testing { ProgressView().controlSize(.small) }
+                            else { Text(L("settings.test")).font(.system(size: 11)) }
+                        }
+                        .buttonStyle(GlassButtonStyle())
+                        .disabled(testing || token.isEmpty)
+                        Spacer()
+                    }
+                    Text(L("settings.token.hint"))
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(.tertiary)
+                } label: {
+                    Text(L("settings.pat.title")).font(.system(size: 10.5)).foregroundStyle(.secondary)
+                }
             }
 
             Divider()
@@ -160,6 +206,32 @@ struct SettingsView: View {
         .padding(18)
         .frame(width: 360)
         .onAppear { launchAtLogin = settings.launchAtLogin }
+        .task { oidcConnected = await OAuthManager.shared.isConnected }
+    }
+
+    private func connectOIDC() {
+        connecting = true
+        testResult = nil
+        let id = settings.oidcClientId.trimmingCharacters(in: .whitespacesAndNewlines)
+        settings.oidcClientId = id
+        let secret = clientSecret.trimmingCharacters(in: .whitespacesAndNewlines)
+        Keychain.save(secret, account: "bexio-client-secret")
+        Task {
+            do {
+                try await OAuthFlow.shared.signIn(clientId: id, clientSecret: secret)
+                let me = try await BexioAPI.shared.me()
+                settings.bexioUserId = me.id
+                settings.bexioUserName = me.displayName
+                oidcConnected = true
+                testOK = true
+                testResult = L("settings.connected", me.displayName)
+                await cache.refresh()
+            } catch {
+                testOK = false
+                testResult = error.localizedDescription
+            }
+            connecting = false
+        }
     }
 
     private var defaultServiceBinding: Binding<Int> {

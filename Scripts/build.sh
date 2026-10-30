@@ -18,7 +18,9 @@ swiftc \
   -framework Combine \
   -framework Security \
   -framework ServiceManagement \
-  -framework CoreGraphics
+  -framework CoreGraphics \
+  -framework AuthenticationServices \
+  -framework CryptoKit
 
 cp Info.plist "$APP/Contents/Info.plist"
 cp Resources/logo-tyf.png "$APP/Contents/Resources/"
