@@ -12,6 +12,7 @@ struct TimerEditorView: View {
     @EnvironmentObject var cache: BexioCache
     @EnvironmentObject var settings: AppSettings
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeWindow) private var closeWindow
 
     @State private var draft = WorkTimer()
     @State private var contactQuery = ""
@@ -137,7 +138,7 @@ struct TimerEditorView: View {
                 .controlSize(.small)
 
             HStack {
-                Button(L("btn.cancel")) { dismiss() }
+                Button(L("btn.cancel")) { dismiss(); closeWindow() }
                     .buttonStyle(GlassButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Spacer()
@@ -229,5 +230,6 @@ struct TimerEditorView: View {
             store.update(draft)
         }
         dismiss()
+        closeWindow()
     }
 }

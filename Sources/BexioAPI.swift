@@ -94,6 +94,7 @@ final class BexioAPI: @unchecked Sendable {
                 if let errs = obj["errors"] as? [String] { message += " " + errs.joined(separator: ", ") }
             }
             TyfLog.append("\(method) \(path) — HTTP \(status): \(String(message.prefix(200)))")
+            if status == 401 { message = L("err.401") }
             throw BexioError(status: status, message: String(message.prefix(300)))
         }
         return data

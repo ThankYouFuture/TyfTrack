@@ -123,6 +123,9 @@ enum L10n {
         "status.inprogress": ["En cours", "In progress", "In Arbeit"],
         "status.done": ["Terminé", "Done", "Erledigt"],
         "err.notoken": ["Aucun jeton API configuré", "No API token configured", "Kein API-Token konfiguriert"],
+        "err.401": ["Jeton Bexio invalide ou expiré. Crée un nouveau jeton sur developer.bexio.com, puis colle-le dans les réglages (Tester et enregistrer).",
+                    "Bexio token invalid or expired. Create a new token on developer.bexio.com, then paste it in Settings (Test & save).",
+                    "Bexio-Token ungültig oder abgelaufen. Erstelle einen neuen Token auf developer.bexio.com und speichere ihn in den Einstellungen."],
 
         "menu.show": ["Afficher TyfTrack", "Show TyfTrack", "TyfTrack einblenden"],
         "menu.hide": ["Masquer TyfTrack", "Hide TyfTrack", "TyfTrack ausblenden"],

@@ -1,6 +1,20 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Window dismissal (settings/editor live in their own windows,
+// because sheets attached to a floating NSPanel render broken on macOS 27)
+
+private struct CloseWindowKey: EnvironmentKey {
+    static let defaultValue: @MainActor () -> Void = {}
+}
+
+extension EnvironmentValues {
+    var closeWindow: @MainActor () -> Void {
+        get { self[CloseWindowKey.self] }
+        set { self[CloseWindowKey.self] = newValue }
+    }
+}
+
 // MARK: - Brand
 
 enum Brand {
@@ -113,9 +127,8 @@ struct ContentView: View {
     @EnvironmentObject var store: TimerStore
     @EnvironmentObject var cache: BexioCache
     @EnvironmentObject var settings: AppSettings
-    @State private var showNewTimer = false
-    @State private var showSettings = false
-    @State private var editingTimer: WorkTimer?
+
+    private var appDelegate: AppDelegate? { NSApp.delegate as? AppDelegate }
 
     var body: some View {
         ZStack {
@@ -132,7 +145,7 @@ struct ContentView: View {
                     ScrollView {
                         VStack(spacing: 10) {
                             ForEach(store.timers) { timer in
-                                TimerCard(timer: timer) { editingTimer = timer }
+                                TimerCard(timer: timer) { appDelegate?.showEditor(.edit(timer)) }
                             }
                         }
                         .padding(.horizontal, 14)
@@ -147,18 +160,9 @@ struct ContentView: View {
         }
         .ignoresSafeArea()
         .frame(minWidth: 340, idealWidth: 372, maxWidth: 480, minHeight: 380, idealHeight: 520, maxHeight: .infinity)
-        .sheet(isPresented: $showNewTimer) {
-            TimerEditorView(mode: .create)
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
-        .sheet(item: $editingTimer) { timer in
-            TimerEditorView(mode: .edit(timer))
-        }
         .onAppear {
-            if settings.bexioUserId == 0 && Keychain.loadToken() == nil {
-                showSettings = true
+            if settings.bexioUserId == 0 {
+                appDelegate?.showSettings()
             }
         }
     }
@@ -187,7 +191,7 @@ struct ContentView: View {
                 }
             }
             Spacer()
-            Button { showSettings = true } label: {
+            Button { appDelegate?.showSettings() } label: {
                 Image(systemName: "gearshape.fill").font(.system(size: 13))
             }
             .buttonStyle(GlassButtonStyle())
@@ -257,7 +261,7 @@ struct ContentView: View {
     private var bottomBar: some View {
         HStack(spacing: 10) {
             Button {
-                showNewTimer = true
+                appDelegate?.showEditor(.create)
             } label: {
                 Label(L("btn.new"), systemImage: "plus")
                     .font(.system(size: 12.5, weight: .semibold))

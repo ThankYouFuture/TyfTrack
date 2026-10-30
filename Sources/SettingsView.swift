@@ -5,6 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var cache: BexioCache
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeWindow) private var closeWindow
 
     @State private var token: String = Keychain.loadToken() ?? ""
     @State private var testing = false
@@ -18,7 +19,7 @@ struct SettingsView: View {
                 Text(L("settings.title"))
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                 Spacer()
-                Button { dismiss() } label: { Image(systemName: "xmark").font(.system(size: 10)) }
+                Button { dismiss(); closeWindow() } label: { Image(systemName: "xmark").font(.system(size: 10)) }
                     .buttonStyle(.plain)
                     .keyboardShortcut(.cancelAction)
             }

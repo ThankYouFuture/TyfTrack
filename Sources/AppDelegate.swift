@@ -72,6 +72,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.isVisible { panel.orderOut(nil) } else { showPanel() }
     }
 
+    // MARK: Auxiliary windows (settings / editor)
+    // Own floating windows rather than sheets: sheets attached to a floating
+    // NSPanel render detached and unusable on macOS 27.
+
+    private var settingsWindow: NSPanel?
+    private var editorWindow: NSPanel?
+
+    private func makeAuxPanel(title: String) -> NSPanel {
+        let w = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 400),
+            styleMask: [.titled, .closable],
+            backing: .buffered, defer: false)
+        w.title = title
+        w.level = .floating
+        w.isReleasedWhenClosed = false
+        w.hidesOnDeactivate = false
+        w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        return w
+    }
+
+    private func position(_ w: NSPanel) {
+        if panel.isVisible {
+            let f = panel.frame
+            w.setFrameTopLeftPoint(NSPoint(x: f.minX - w.frame.width - 12, y: f.maxY))
+            if !w.frame.intersects(w.screen?.visibleFrame ?? .zero) { w.center() }
+        } else {
+            w.center()
+        }
+    }
+
+    func showSettings() {
+        if let w = settingsWindow {
+            w.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        let w = makeAuxPanel(title: L("settings.title"))
+        let view = SettingsView()
+            .environmentObject(store)
+            .environmentObject(cache)
+            .environmentObject(settings)
+            .environment(\.closeWindow) { [weak self] in self?.settingsWindow?.close() }
+        w.contentView = NSHostingView(rootView: view)
+        settingsWindow = w
+        position(w)
+        w.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func showEditor(_ mode: TimerEditorView.Mode) {
+        editorWindow?.close()
+        let title: String
+        if case .create = mode { title = L("editor.new") } else { title = L("editor.edit") }
+        let w = makeAuxPanel(title: title)
+        let view = TimerEditorView(mode: mode)
+            .environmentObject(store)
+            .environmentObject(cache)
+            .environmentObject(settings)
+            .environment(\.closeWindow) { [weak self] in self?.editorWindow?.close() }
+        w.contentView = NSHostingView(rootView: view)
+        editorWindow = w
+        position(w)
+        w.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     // MARK: Status item
 
     private func setupStatusItem() {
